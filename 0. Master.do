@@ -36,6 +36,11 @@ set mem 100m
 set matsize 1000
 capture log close
 
+*CHANGE HERE globals for GitHub and Veracrypt
+global github "/Users/Home/Documents/GitHub/Burkina-Faso-Conflict-SUPERMUN"
+
+
+
 *Directories
 cap conf f "C:\Windows\bootstat.dat"
 if !_rc {
@@ -49,7 +54,7 @@ if !_rc {
 	global graphs    "$output\1. Graphs"
 	global maps      "$output\2. Maps"
 	global logs      "$output\3. Logs"
-	global dos		 "$root\3. DOs"
+	global dos		 "$github"
 	}
 else {
 	global sys "MAC"
@@ -62,7 +67,7 @@ else {
 	global graphs    "$output/1. Graphs"
 	global maps      "$output/2. Maps"
 	global logs      "$output/3. Logs"
-	global dos		 "$root/3. DOs"
+	global dos		 "$github"
 	}
 	
 	
