@@ -15,6 +15,7 @@
 	This file performs the following tasks:
 		1. Cleaning of Shapefiles data
 		2. Cleaning of ACLED data 
+		3. Cleaning of SUPERMUN data
 		
 			
 *******************************************************************************/
@@ -325,3 +326,88 @@ date_event event sub_event_type actor1 assoc_actor_1 actor2 location fatalities 
 	export excel  using "$work/excel/acled_long", replace firstrow(var)
 	sa "$work/acled/acled_long", replace
 	
+	
+***************************   2.5 Obs per year for panel  *******************************
+
+* collapse obs at level region province commune_edited year so we can create a panel
+
+*create vars by event_category & event_type 
+
+*fatalities 
+gen fatalities_violent=.
+replace fatalities_violent = fatalities if event_cat==1
+
+gen fatalities_demon=.
+replace fatalities_demon= fatalities if event_cat==2
+
+gen fatalities_no_violent=.
+replace fatalities_no_violent= fatalities if event_cat==3
+
+*events 
+tab event_cat,  gen(e_cat_)
+ren no_event total_events
+
+collapse (sum)  fatalities* e_cat_* total_events , by(year region province commune_edited )
+
+
+
+sa "$work/acled/acled_long_year", replace
+	
+	
+********************************************************************************
+**********************                                    **********************  
+**********************         3. Cleaning SUPERMUN       **********************
+**********************                                    **********************    
+********************************************************************************
+
+*For 2014 & 2015 commune data is not cleaned
+local dataset institutional_capacity service_delivery
+forvalues j=2014/2015{
+	
+	di "Year to clean: `j'"
+		foreach data in `dataset'{ 
+		
+			di "Dataset to clean: `data'"
+			u "$raw/`j'_`data'", clear
+
+				*Use accent program
+				accent commune
+				
+				*Change underscore
+					foreach i of varlist region province commune{
+					replace `i' = subinstr(`i', "_", "-", 1)
+					}
+				*Clean commune
+					replace commune = "NIAOGHO" if commune== "NIAOGO" & region == "CENTRE-EST" & province==  "BOULGOU"
+					replace commune = "SANGHA"  if commune== "SANGA" & region == "CENTRE-EST" & province==  "KOULPELOGO"
+					
+				*More communes to clean 	
+					replace commune = "SOUBAKANIE-DOUGOU" if commune=="SOUBAKANIEDOUGOU" 
+					replace commune = "GOROM -GOROM"      if commune=="GOROM-GOROM" 
+					replace commune = "BOUSSOUMA"         if commune=="BOUSSOUMA GARANGO" & province == "BOULGOU"
+					replace commune = "BOUSSOUMA"         if commune=="BOUSSOUMA KAYA"    & province == "SANMATENGA"
+					
+				*Region to clean
+					replace region= "PLATEAU CENTRAL" if region == "PLATEAU-CENTRAL"
+					
+					*For commune BINDE 
+					replace region=   "CENTRE-SUD" if mi(region)   & commune=="BINDE"
+					replace province= "ZOUNDWEOGO" if mi(province) & commune=="BINDE"
+					*For commune ZOAGA
+					replace region=   "CENTRE-EST" if mi(region)   & commune=="ZOAGA"
+					replace province= "BOULGOU"    if mi(province) & commune=="ZOAGA"
+					*For commune OURSI
+					replace region=   "SAHEL"      if mi(region)   & commune=="OURSI"
+					replace province= "OUDALAN"    if mi(province) & commune=="OURSI"
+					
+					
+		ren commune commune_edited			
+		save "$work/world bank/`j'_`data'", replace 
+		}
+
+}
+ 
+ 
+
+
+

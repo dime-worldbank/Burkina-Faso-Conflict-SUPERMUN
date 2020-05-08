@@ -12,8 +12,10 @@
 	*Objective: Merge cleaned datasets into a master dataset
 	
 	This file performs the following tasks:
-		1. Merge ACLED data with 2018 SUPERMUN data 
-		2. Merge output 1. with shapefile data
+		1. Merge ACLED data with shapefile
+		2. Merge rounds of SUPERMUN to create panel
+		3. Merge SUPERMUN with ACLED data
+		4. Merge SUPERMUN + ACLED + SHP 
 		
 			
 *******************************************************************************/
@@ -21,68 +23,233 @@
 
 ********************************************************************************
 **********************                                    **********************  
-**********************        1. SUPERMUN - ACLED         **********************
+**********************          1. ACLED - SHP            **********************
 **********************                                    **********************    
 ********************************************************************************
 
-
-u "$raw/2018_service_delivery", clear
-*create a year variable for match with ACLED
-gen year=2018
-move year region
-
-mmerge region province commune_edited year using  "$work/acled/acled_long"
-drop _merge 
+u "$work/maps/burkinafaso", clear 
+mmerge region province commune_edited using  "$work/acled/acled_long"
+tab _merge 
 
 /*
-Note: 
+Note:  All obs from ACLED data are merged
+-->157 obs are only in master data
+-----> no ACLED events in these communes
 
- ---> ACLED data has 394 obs for 2018= 331 obs were merged + 63 obs for Bobo & Ouaga
-. tab _merge
                           _merge |      Freq.     Percent        Cum.
 ---------------------------------+-----------------------------------
-             only in master data |        250       10.40       10.40
-              only in using data |      1,822       75.82       86.23
-   both in master and using data |        331       13.77      100.00
+             only in master data |        157        6.80        6.80
+   both in master and using data |      2,153       93.20      100.00
 ---------------------------------+-----------------------------------
-                           Total |      2,403      100.00
+                           Total |      2,310      100.00
 
-
-
-
-ACLED data not merged with SUPERMUN  in 2018--> BOBO-DIOULASSO & OUAGADOUGOU communes
-
-. tab commune_edited if _merge==2 & year==2018
-
-         commune_edited |      Freq.     Percent        Cum.
-------------------------+-----------------------------------
-         BOBO-DIOULASSO |         17       26.98       26.98
-            OUAGADOUGOU |         46       73.02      100.00
-------------------------+-----------------------------------
-                  Total |         63      100.00
 
 */
 
+drop _merge
+
+*save dataset in both excel and stata formats
 
 
+	order year region province commune_edited id_event event_cat event_type no_event fatalities
+	sort  year region province commune_edited
+	save "$work/acled/acled_long_shp", replace 
+	
+
+	
 ********************************************************************************
 **********************                                    **********************  
-**********************   2. Shapefile - Dataset from 1.   **********************
+**********************            2. SUPERMUN DATA        **********************
 **********************                                    **********************    
 ********************************************************************************
 
-*merge
-	mmerge region province commune_edited using  "$work/maps/burkinafaso"
-	drop _merge /// all matched
+forvalues i=2014/2018 {
 	
-	
-	
-*save dataset in both excel and stata formats
+	di "Merge year: `i'"
+	tempfile `i'
+		
+		*Merge - note that for years <2016 there is no commune_edited var so we use 
+		*commune as is an id. For the rest of the years, commune_edited & province are ids.
+		*Also data for these years has been cleaned
+			if(`i'<2016){
+				u "$work/world bank/`i'_institutional_capacity", clear
+				
+				*rename variables with the same names in both datasets
+				ren total_points total_points_ic
+				ren stars_total stars_total_ic 
+				
+				mmerge province commune using "$work/world bank/`i'_service_delivery"
+			}
+				else{
+			
+					u "$raw/`i'_institutional_capacity", clear
+					*rename variables with the same names in both datasets
+					ren total_points total_points_ic
+					ren stars_total stars_total_ic
+					
+					mmerge province commune_edited using "$raw/`i'_service_delivery"
+					
+					
+				}	
+				
+		*rename variables with the same names in both datasets
+		ren total_points total_points_sd
+		ren stars_total  stars_total_sd 
 
-	order year region province commune_edited id_event event_cat event_type no_event fatalities
-	export excel  using "$work/excel/acled_wb_long", replace firstrow(var)
+		
+		gen year = `i'
+		move year region 
+	save ``i''
+}
+
+
+
+/*
+
+Note 1:
+
+For the year 2018, 3 observations from institutional capacity dataset were not merged.
+
+     +--------------------------------+
+     |   commune               _merge |
+     |--------------------------------|
+347. |    BOULSA   only in using data |
+348. |     DABLO   only in using data |
+349. | OUINDIGUI   only in using data |
+     +--------------------------------+
+	 
+	 
+*Note 2:
+	 
+commune_edited does not uniquely identifies observations as BOUSSOUMA GARANGO and 
+BOUSSOUMA KAYA are edited to BOUSSOUMA
+	 
+     +-------------------------------+
+     |           commune   commune~d |
+     |-------------------------------|
+ 57. | BOUSSOUMA GARANGO   BOUSSOUMA |
+ 58. |    BOUSSOUMA KAYA   BOUSSOUMA |
+     +-------------------------------+
+
+*/ 
+
+
+append using `2014'
+append using `2015'
+append using `2016'
+append using `2017'
+ drop commune 
+ 
+***Fix variables to have a unique ID 
+
+
+
+
+*check if is ID
+ isid year region province commune_edited
+ sort year region province commune_edited
+save "$work/world bank/SUPERMUN panel", replace
+
+********************************************************************************
+**********************                                    **********************  
+**********************             3. MASTER DATA         **********************
+**********************                                    **********************    
+********************************************************************************
+
+
+
+*ACLED
+
+mmerge year region province commune_edited using "$work/acled/acled_long_year" 
+
+*Drop obs that are not present in SUPERMUN data 
+drop if year==2019 | year<2014
+
+
+/* Note: not merged observations
+
+. tab _merge
+                          _merge |      Freq.     Percent        Cum.
+---------------------------------+-----------------------------------
+             only in master data |        909       78.29       78.29
+              only in using data |         43        3.70       82.00
+   both in master and using data |        209       18.00      100.00
+---------------------------------+-----------------------------------
+                           Total |      1,161      100.00
+
+
+. tab year if _merge==2
+
+       year |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       2014 |         10       23.26       23.26
+       2015 |         12       27.91       51.16
+       2016 |         17       39.53       90.70
+       2017 |          2        4.65       95.35
+       2018 |          2        4.65      100.00
+------------+-----------------------------------
+      Total |         43      100.00
+
+--> no obs for OUAGADOUGOU & BOBO-DIOULASSO
+--> Other obs that are not merged are for events in munis that were part of 
+SUPERMUN's expansion
+*/
+
+drop _merge
+
+
+*Shapefiles
+mmerge region province commune_edited using "$work/maps/burkinafaso" /// all obs merged
+
+drop _merge
+
+
+
+* create a panel ID
+sort region province commune_edited
+egen panel_id = group(region province commune_edited)
+
+
+
+*Set panel format
+
+xtset panel_id year 
+
+
+/*note:
+
+       panel variable:  panel_id (unbalanced)
+        time variable:  year, 2014 to 2018, but with gaps
+                delta:  1 unit
+
+	*/
 	
-	sa "$work/acled/acled_wb_long", replace
+
+*Labels for better data visualization 
 	
+			*variables
+			label var total_events    			"Number of Events"
+			label var e_cat_1		   			"Number of Violent Events"
+			label var e_cat_2	    			"Number of Demonstrations"
+			label var e_cat_3	    			"Number of Non-Violent Events"
+			label var fatalities            	"Number of Fatalities"
+			label var fatalities_violent		"Number of Violent Fatalities"
+			label var fatalities_demon      	"Number of Fatalities from Demonstrations"
+			label var fatalities_no_violent   	"Number of Non-Violent Fatalities"
+			
+			
+* assumption! all the missing values to 0 
+ foreach i of varlist fatalities* total_events e_cat*{
+ 	tab `i', mi
+ 	replace `i'=0 if `i'==.
+	tab `i'
+ }
+
+ *Gen total points
+gen total_points= total_points_ic + total_points_sd
+sum total_points* 
+		
+		
 	
+	save "$work/Master panel", replace
 

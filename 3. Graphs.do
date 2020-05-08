@@ -6,7 +6,7 @@
 			- Exploratory Analysis -
 						  
 			By:   		  Mariana Garcia
-			Last updated: 28Feb2020
+			Last updated: 10Apr2020
 			
       ----------------------------------------------------------
 			  
@@ -22,7 +22,7 @@
 *******************************************************************************/
 
 	
-u "$work/acled/acled_wb_long", clear 
+u "$work/acled/acled_long", clear 
 
 ********************************************************************************
 **********************                                    **********************  
@@ -322,7 +322,7 @@ foreach y in `var' {
 				xtitle(Quarter, size(small)) xlabel(1/`a' , labsize(half_tiny) valuelabel alt) ///
 				ytitle(Frequency, size(small)) ylabel( #12 , labsize(tiny)) || ///
 				scatter fatalities x_axis, color(maroon%70) yaxis(2) ///
-				ytitle(Number of Fatalities, size(small) axis(2)) ylabel( #20 , labsize(tiny) axis(2))
+				ytitle(Number of Fatalities, size(small) axis(2)) ylabel( #20 , labsize(tiny) axis(2) alt)
 
 	graph export "$output/1. Graphs/12.Violent_events_top_region.png", as(png) replace	
 	
@@ -406,69 +406,27 @@ local max_e `r(max)'
 **********************           3. SUPERMUN data         **********************
 **********************                                    **********************    
 ********************************************************************************
-*3.1 Service delivery 	
-local varlist fatalities no_event event_type event_cat region inter1 inter2 
+u "$work/Master panel", clear
+
+
+
+*3.1 Total Scores	
+local varlist fatalities total_events region e_cat_1 fatalities_violent
 
 	foreach v in `varlist'{
 	local l_`v': variable label `v'
+	di "`l_`v''"
 	}
-
-
-
-preserve
-		* Sum number of events per year
-		collapse (sum) no_event fatalities if year==2018 & !mi(total_points), by(region province commune_edited total_points)
-
+	
+	
 local method fpfit lfit	qfit
 foreach m in `method' {	
+
 	
 	*Method
 			di " ************* Method: `m' ************* "
 	
-		foreach v of varlist no_event fatalities{	
-			
-			*Label 	
-			label var `v'  "`l_`v''"
-			*tab `v'
-			label var total_points  "Total points"
-			
-			*Graph
-			di " ************* Graph variable: `l_`v' ************* "
-
-			
-			twoway scatter total_points `v', color(emerald%40) ///
-			scheme(s2color) title("2018 Service Delivery Scores and 2018 `l_`v'' ") ///
-			msize(tiny tiny) subtitle(For All Type of Events) ///
-			xtitle(`l_`v'' , size(small)) ///
-			ytitle(Total Points , size(small)) ylabel(, labsize(vsmall)) || ///
-			`m'  total_points `v', color(navy%80) ///
-			legend(order(1 "Total points" 2 "Predicted total points")) 
-			
-
-
-		graph export "$output/1. Graphs/13.`m'_`v'_service_delivery.png", as(png) replace	
-			
-		}
-	
-	}
-	
-restore
-
-keep if event_cat==1
-
-*For violent events
-
-preserve
-		* Sum number of events per year
-		collapse (sum) no_event fatalities if year==2018 & !mi(total_points), by(region province commune_edited total_points)
-
-local method fpfit lfit	qfit
-foreach m in `method' {	
-	
-	*Method
-			di " ************* Method: `m' ************* "
-	
-		foreach v of varlist no_event fatalities{	
+		foreach v of varlist total_events fatalities{	
 			
 			*Label 	
 			label var `v'  "`l_`v''"
@@ -480,7 +438,47 @@ foreach m in `method' {
 
 			
 			twoway scatter total_points `v', color(emerald%40) ///
-			scheme(s2color) title("2018 Service Delivery Scores and 2018 `l_`v'' ") ///
+			scheme(s2color) title("Total Scores and `l_`v'' ") ///
+			msize(tiny tiny) subtitle(For All Type of Events) ///
+			xtitle(`l_`v'' , size(small)) ///
+			ytitle(Total Points , size(small)) ylabel(, labsize(vsmall)) || ///
+			`m'  total_points `v', color(navy%80) ///
+			legend(order(1 "Total points" 2 "Predicted total points")) 
+			
+
+
+		graph export "$output/1. Graphs/13.`m'_`v'_total_points.png", as(png) replace	
+			
+		}
+	
+	}
+	
+
+
+
+*For violent events
+
+
+
+local method fpfit lfit	qfit
+foreach m in `method' {	
+	
+	*Method
+			di " ************* Method: `m' ************* "
+	
+		foreach v of varlist e_cat_1 fatalities_violent{	
+			
+			*Label 	
+			label var `v'  "`l_`v''"
+			*tab `v'
+			label var total_points  "Total points"
+			
+			*Graph
+			di " ************* Graph variable: `l_`v'' ************* "
+
+			
+			twoway scatter total_points `v', color(emerald%40) ///
+			scheme(s2color) title("Total Scores and `l_`v'' ") ///
 			msize(tiny tiny) subtitle(For Violent Events) ///
 			xtitle(`l_`v'' , size(small)) ///
 			ytitle(Total Points , size(small)) ylabel(, labsize(vsmall)) || ///
@@ -495,5 +493,111 @@ foreach m in `method' {
 	
 	}
 	
-restore
 
+
+*3.2 Total Scores --> cap values to <=20
+
+drop if fatalities>10
+drop if total_events >10
+
+
+
+	
+	
+local method fpfit lfit	qfit
+foreach m in `method' {	
+
+
+	*Method
+			di " ************* Method: `m' ************* "
+	
+		foreach v of varlist total_events fatalities{	
+			
+			*Label 	
+			label var `v'  "`l_`v''"
+			*tab `v'
+			label var total_points  "Total points"
+			
+			*Graph
+			di " ************* Graph variable: `l_`v'' ************* "
+
+			
+			twoway scatter total_points `v' if  `v'<=10 , color(emerald%40) ///
+			scheme(s2color) title("Total Scores and `l_`v'' ") ///
+			msize(tiny tiny) subtitle(For All Type of Events) ///
+			xtitle(`l_`v'' , size(small)) ///
+			ytitle(Total Points , size(small)) ylabel(, labsize(vsmall)) || ///
+			`m'  total_points `v', color(navy%80) ///
+			legend(order(1 "Total points" 2 "Predicted total points")) 
+			
+
+
+		graph export "$output/1. Graphs/14.`m'_`v'_total_points_cap.png", as(png) replace	
+			
+		}
+	
+	}
+	
+
+
+*For violent events
+
+
+
+local method fpfit lfit	qfit
+foreach m in `method' {	
+	
+	*Method
+			di " ************* Method: `m' ************* "
+	
+		foreach v of varlist e_cat_1 fatalities_violent{	
+			
+			*Label 	
+			label var `v'  "`l_`v''"
+			*tab `v'
+			label var total_points  "Total points"
+			
+			*Graph
+			di " ************* Graph variable: `l_`v'' ************* "
+
+			
+			twoway scatter total_points `v', color(emerald%40) ///
+			scheme(s2color) title("Total Scores and `l_`v'' ") ///
+			msize(tiny tiny) subtitle(For Violent Events) ///
+			xtitle(`l_`v'' , size(small)) ///
+			ytitle(Total Points , size(small)) ylabel(, labsize(vsmall)) || ///
+			`m'  total_points `v', color(navy%80) ///
+			legend(order(1 "Total points" 2 "Predicted total points")) 
+			
+
+
+		graph export "$output/1. Graphs/14.violent_events_`m'_`v'_total_points_cap.png", as(png) replace	
+			
+		}
+	
+	}
+	
+	
+*Final graphs for presentation
+u "$work/Master panel", clear
+
+drop if fatalities_violent>15
+drop if e_cat_1>15
+
+	twoway scatter total_points fatalities_violent, color(emerald%40) ///
+			scheme(s2color) title("Total Scores and Number of Fatalities (2014-2018)") ///
+			msize(tiny tiny) subtitle(For Violent Events) ///
+			xtitle(Number of Fatalities, size(small)) xlabel(0(1)15, labsize(vsmall)) ///
+			ytitle(Total Points , size(small)) ylabel(0(20)180, labsize(vsmall)) || ///
+			fpfit total_points fatalities_violent, color(navy%80) ///
+			legend(order(1 "Total points" 2 "Predicted total points")) 
+			graph export "$output/1. Graphs/15.violent_events_fatalities_total_points_cap.png", as(png) replace	
+			
+				twoway scatter total_points e_cat_1, color(emerald%40) ///
+			scheme(s2color) title("Total Scores and Number of Events(2014-2018)") ///
+			msize(tiny tiny) subtitle(For Violent Events) ///
+			xtitle(Number of Violent Events, size(small)) xlabel(0(1)15, labsize(vsmall)) ///
+			ytitle(Total Points , size(small)) ylabel(0(20)180, labsize(vsmall)) || ///
+			fpfit total_points e_cat_1, color(navy%80) ///
+			legend(order(1 "Total points" 2 "Predicted total points")) 
+			graph export "$output/1. Graphs/15.violent_events_no_events_total_points_cap.png", as(png) replace	

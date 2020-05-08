@@ -5,7 +5,7 @@
 			- Exploratory Analysis -
 						  
 			By:           Mariana Garcia
-			Last updated: 27Feb2020
+			Last updated: 10Apr2020
 						  
       ----------------------------------------------------------
 			  
@@ -17,10 +17,12 @@
 		2. Merge World Bank Data
 		3. Visual Aids
 		4. Maps
+		5. Fixed Effects Analysis
 		
 	*packeges 
 	-ssc install shp2dta
 	-ssc install spmap
+	-ssc install outreg2
 			
 *******************************************************************************/
 
@@ -34,14 +36,44 @@ clear all
 set more off
 set mem 100m
 set matsize 1000
-capture log close
-
-*CHANGE HERE globals for GitHub and Veracrypt
-global github "/Users/Home/Documents/GitHub/Burkina-Faso-Conflict-SUPERMUN"
+*capture log close
 
 
+**********************               USERS                **********************  
+/*
+ User Number:
+   * Mariana                 1    
+   * User2                   2    // Assign a user number to each additional collaborator 
+   * User3                   3    // Assign a user number to each additional collaborator 
+*/    
 
-*Directories
+ *Set this value to the user currently using this file
+ global user  1
+
+   
+ *Add here YOUR globals for GitHub and Veracrypt
+   
+   if $user == 1 {
+       global github "/Users/Home/Documents/GitHub/Burkina-Faso-Conflict-SUPERMUN"
+	   global vera   ""
+   }
+
+   if $user == 2 {
+       global github ""  // Enter the file path to the project folder for the next user here
+	   global vera   ""  //Please note that you need the path to be "mounted" in Veracrypt
+   }
+
+
+   if $user == 3 {
+       global github ""  // Enter the file path to the project folder for the next user here
+	   global vera   ""  //Please note that you need the path to be "mounted" in Veracrypt
+   }
+
+
+
+**********************             Directories             ********************** 
+
+
 cap conf f "C:\Windows\bootstat.dat"
 if !_rc {
 	global sys "WIN"
@@ -78,6 +110,7 @@ else {
 
 	ssc install shp2dta
 	ssc install spmap
+	ssc install outreg2
 	
 ********************************************************
 ******      	  	   1. Cleaning              ********

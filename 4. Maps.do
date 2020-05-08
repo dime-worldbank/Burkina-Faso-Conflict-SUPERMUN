@@ -21,7 +21,7 @@
 			
 *******************************************************************************/
 
-u "$work/acled/acled_wb_long", clear 
+u "$work/acled/acled_long_shp", clear 
 
 ********************************************************************************
 **********************                                    **********************  
@@ -115,13 +115,13 @@ preserve
 	
 	spmap fatalities using "$raw/shapefiles/new shapefile/burkinacoord", ///
 	id(id_shapefile)  fcolor(Reds2)  ///
-	clmethod(custom) clbreaks(0 14 40 124 479) ///
+	clmethod(custom) clbreaks(0 1 14 40 124 479) ///
 	osize(thin ..) legend(position(1)) ///
 	title("Number of Fatalities [2014-2019]") ///
 	legtitle("Number of Fatalities") ///
-	legend(label(1 "0 Fatalities (50% data)") label(2 "1-14        (40% data)") ///
-	label(3 "15-40       (5% data)") label(4 "41-124     (4% data)" )  ///
-	label(5 "125-479    (1% data)")) 
+	legend(label(1 "0 Fatalities (50% data)") label(2 "1                 (25% data)") ///
+	label(3 "2-14            (15% data)") label(4 "15-40          (5% data)" )  ///
+	label(5 "41-124        (4% data)") label(6 "125-479      (1% data)")) 
 	
 	graph export "$output/2. Maps/1. Overall maps/2. total fatalities.png", replace
 	
@@ -156,7 +156,7 @@ ren no_event events
 				forval i=2014/2019{
 					preserve
 				
-					collapse (sum) events fatalities, by (id_shapefile year)
+					collapse (sum) `var', by (id_shapefile year)
 	
 					*Label variables
 				
@@ -183,16 +183,28 @@ ren no_event events
 							*fill missing values with 0
 							replace `var'_`i'= . if `var'_`i'==0
 						
-								*Map by category  for events and total fatalities per year	
-					
-								spmap `var'_`i' using "$raw/shapefiles/new shapefile/burkinacoord", ///
-								id(id_shapefile)  fcolor(Reds2)  ///
-								clmethod(custom) clbreaks(0 14 40 124 479) ///
-								osize(thin ..) legend(position(1)) ///
-								title(" `l' in `i'") legtitle("`l'") ///
-								legend(label(1 "0 `var'") label(2 "1-14") label(3 "15-40") ///
-								label(4 "41-124" ) label(5 "125-479")) 
-					
+								*Map by category for events and total fatalities per year	
+								if ("`var'"=="fatalities"){
+									spmap `var'_`i' using "$raw/shapefiles/new shapefile/burkinacoord", ///
+									id(id_shapefile)  fcolor(Reds2)  ///
+									clmethod(custom) clbreaks(0 1 14 40 124 479) ///
+									osize(thin ..) legend(position(1)) ///
+									title(" `l' in `i'") legtitle("`l'") ///
+									legend(label(1 "0 `var'") label(2 "1") ///
+									label(3 "2-14") label(4 "15-40" )  ///
+									label(5 "41-124") label(6 "125-479"))
+								}
+								
+									else {
+										spmap `var'_`i' using "$raw/shapefiles/new shapefile/burkinacoord", ///
+										id(id_shapefile)  fcolor(Reds2)  ///
+										clmethod(custom) clbreaks(0 3 10 19 73 315) ///
+										osize(thin ..) legend(position(1)) ///
+										title(" `l' in `i'") legtitle("`l'") ///
+										legend(label(1 "0 `var'") label(2 "1-3") label(3 "4-10") ///
+										label(4 "11-19") label(5 "20-73") label(6 "74-315")) 
+									}
+						
 						drop `var'_`i'  dup* 
 				restore
 			graph export "$output/2. Maps/2. Gif creation/`var'_`i'.png", replace
@@ -200,7 +212,8 @@ ren no_event events
 			}
 		
 	}
-
+	
+	
 	*By category of events, fatalities
 
 
@@ -251,19 +264,34 @@ forval c=1/`b'{
 									tab cat_`c'_`i'_`var', mi  /// double check var
 							
 							
-							* Map by category  for events and total fatalities per year	
-						
-								spmap cat_`c'_`i'_`var' using "$raw/shapefiles/new shapefile/burkinacoord", ///
-								id(id_shapefile)  fcolor(Reds2)  ///
-								clmethod(custom) clbreaks(0 14 40 124 479) ///
-								osize(thin ..) legend(position(1)) ///
-								title("`lab': `l' in `i'") legtitle("`l'") ///
-								legend(label(1 "0 `var'") label(2 "1-14") label(3 "15-40") ///
-								label(4 "41-124" ) label(5 "125-479")) 
+							* Map by category for events and total fatalities per year	
+							if ("`var'"=="fatalities"){
+									spmap cat_`c'_`i'_`var' using "$raw/shapefiles/new shapefile/burkinacoord", ///
+									id(id_shapefile)  fcolor(Reds2)  ///
+									clmethod(custom) clbreaks(0 1 14 40 124 479) ///
+									osize(thin ..) legend(position(1)) ///
+									title("`lab': `l' in `i'") legtitle("`l'") ///
+									legend(label(1 "0 `var'") label(2 "1") ///
+									label(3 "2-14") label(4 "15-40" )  ///
+									label(5 "41-124") label(6 "125-479")) 
+								}
+								
+								
+									else {
+										spmap cat_`c'_`i'_`var' using "$raw/shapefiles/new shapefile/burkinacoord", ///
+										id(id_shapefile)  fcolor(Reds2)  ///
+										clmethod(custom) clbreaks(0 3 10 19 73 315) ///
+										osize(thin ..) legend(position(1)) ///
+										title("`lab': `l' in `i'") legtitle("`l'") ///
+										legend(label(1 "0 `var'") label(2 "1-3") label(3 "4-10") ///
+										label(4 "11-19") label(5 "20-73") label(6 "74-315")) 
+									}
+							
 						
 							drop cat_`c'_`i'_`var'  dup* 
 					restore
-				graph export "$output/2. Maps/2. Gif creation/`lab'_`var'_`i'.png", replace
+					
+				graph export "$output/2. Maps/2. Gif creation/`c'_`var'_`i'.png", replace
 					}
 				}
 			
@@ -280,20 +308,58 @@ ren events no_event
 **********************                                    **********************    
 ********************************************************************************
 
-keep if year==2018
-collapse  total_points, by(id_shapefile)
-replace total_points=. if total_points==0
- 
-spmap total_points using "$raw/shapefiles/new shapefile/burkinacoord", ///
+u "$work/Master panel", clear
+
+
+*look at cuts for maps
+
+sum total_points, detail 
+local varlist p25 p50 p75 max
+foreach j in `varlist' {
+local c_`j'     `r(`j')'
+local l_c_`j' = round(`c_`j'', 1)
+di "Check local: `c_`j'', and rounded value for graph labels `l_c_`j''"
+}
+
+*create a map for overview
+preserve
+collapse total_points, by(id_shapefile)
+spmap total_points using "$raw/shapefiles/new shapefile/burkinacoord" , ///
 	id(id_shapefile)  fcolor(RdBu)  ///
-	clmethod(custom) clbreaks(0 44 72 97 106) ///
+	clmethod(custom) clbreaks(0 `c_p25' `c_p50' `c_p75' `c_max') ///
 	osize(thin ..) legend(position(1)) ///
-	title("Service Delivery in 2018") legtitle("Total Points") ///
-	legend(label(1 "No data") label(2 "1 to 44") label(3 "45 to 72" ) ///
-	label(4 "73 to 97") label(5 "98 to 106")  ) 
+	title("Average Total Points 2014-2018") legtitle("Average Total Points") ///
+	legend(label(1 "No data") label(2 "1 to `l_c_p25' (25% of data)") label(3 "`l_c_p25' to `l_c_p50'(25% of data)" ) ///
+	label(4 "`l_c_p50' to `l_c_p75' (25% of data)") label(5 "`l_c_p75' to `l_c_max' (25% of data)")  ) 
+graph export "$output/2. Maps/1. Overall maps/SUPERMUN_average_total_p.png", replace
+
+restore
+
+ 
+*create maps per year
+keep year id_shapefile fatalities fatalities_violent fatalities_demon fatalities_no_violent e_cat_1 e_cat_2 e_cat_3 total_events total_points
+
+* reshape dataset to have one obs per id_shapefile 
+
+reshape wide fatalities fatalities_violent fatalities_demon fatalities_no_violent e_cat_1 e_cat_2 e_cat_3 total_events total_points, i(id_shapefile) j (year)
+
+*for total_points
+
+forval i=2014/2018{
 	
-graph export "$output/2. Maps/1. Overall maps/3. service delivery.png", replace
 	
+	spmap total_points`i' using "$raw/shapefiles/new shapefile/burkinacoord" , ///
+	id(id_shapefile)  fcolor(RdBu)  ///
+	clmethod(custom) clbreaks(0 `c_p25' `c_p50' `c_p75' `c_max') ///
+	osize(thin ..) legend(position(1)) ///
+	title("Total Points in `i'") legtitle("Total Points") ///
+	legend(label(1 "No data") label(2 "1 to `l_c_p25'") label(3 "`l_c_p25' to `l_c_p50'" ) ///
+	label(4 "`l_c_p50' to `l_c_p75'") label(5 "`l_c_p75' to `l_c_max' ")  ) 
 	
+graph export "$output/2. Maps/2. Gif creation/SUPERMUN_total_p_`i'.png", replace
+	
+}
+
+
 clear all 	
 
