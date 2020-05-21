@@ -6,7 +6,7 @@
 			- Exploratory Analysis -
 						  
 			By:   		  Mariana Garcia
-			Last updated: 09March2020
+			Last updated: 10Apr2020
       ----------------------------------------------------------
 			  
 	*Objective: Graph and map data from Acled and Supermun to better understad 
